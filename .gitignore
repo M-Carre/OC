@@ -1,0 +1,27 @@
+
+# Fichiers de données volumineux
+*.pkl
+*.parquet
+
+# Fichiers et dossiers Python courants à ignorer
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Fichiers de configuration d'IDE et checkpoints
+.vscode/
+.idea/
+*.swp
+*.swo
+.ipynb_checkpoints/
+
+# Fichiers secrets et de dépendances locales (si utilisés)
+.env
+*.log
