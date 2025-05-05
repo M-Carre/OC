@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+tensorflow>=2.10
+spacy>=3.0
+# en_core_web_sm # Téléchargé séparément
+scikit-learn
+numpy>=1.20
+# python-multipart
+pandas
+# --- Dépendances de Test ---
+pytest
+httpx
