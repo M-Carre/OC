@@ -1,5 +1,5 @@
-# .github/workflows/deploy.yml
-name: Deploy Python FastAPI App to Azure Web App (Optimized Package) # Nom mis à jour
+# .github/workflows/deploy.yml (Version Baseline)
+name: Deploy Python FastAPI App (Baseline) to Azure Web App
 
 on:
   push:
@@ -11,7 +11,6 @@ env:
   PYTHON_VERSION: '3.11'
   VENV_NAME: 'antenv'
   API_SOURCE_DIR: '${{ github.workspace }}/api'
-  # Nom de l'archive ZIP de déploiement
   DEPLOY_PACKAGE_NAME: 'api_deploy_package.zip'
 
 jobs:
@@ -36,49 +35,38 @@ jobs:
       run: |
         $VENV_NAME/bin/pip install -r $API_SOURCE_DIR/requirements.txt
 
-    - name: Download spaCy language model
-      run: |
-        $VENV_NAME/bin/python -m spacy download en_core_web_sm
+    # --- ÉTAPE spaCy SUPPRIMÉE ---
 
-    - name: List files and venv contents # Garder pour debug si besoin
+    - name: List files and venv contents
       run: |
-        # ... (commandes ls inchangées) ...
         echo "--- Listing Root Directory (${{ github.workspace }}) ---"; ls -lR ${{ github.workspace }}; echo "---";
         echo "--- Listing API Directory ($API_SOURCE_DIR) ---"; ls -lR $API_SOURCE_DIR; echo "---";
         echo "--- Listing VENV bin ($VENV_NAME/bin) ---"; ls -l $VENV_NAME/bin || echo "Venv bin not found"; echo "---";
-
 
     - name: Run tests
       run: |
          $VENV_NAME/bin/pytest $API_SOURCE_DIR/tests/
 
-    # --- NOUVELLE ÉTAPE : Créer l'archive ZIP de déploiement ---
+    # --- MODIFIÉ : Créer l'archive ZIP (Baseline) ---
     - name: Create deployment package
       run: |
-        echo "Création de l'archive ZIP pour le déploiement..."
-        # Créer un dossier temporaire pour l'archive
+        echo "Création de l'archive ZIP (Baseline) pour le déploiement..."
         mkdir deploy_package
-        # Copier UNIQUEMENT les fichiers nécessaires de api/ vers ce dossier
+        # Copier les fichiers nécessaires pour la baseline
         cp $API_SOURCE_DIR/main.py deploy_package/
         cp $API_SOURCE_DIR/requirements.txt deploy_package/
-        cp $API_SOURCE_DIR/model.tflite deploy_package/
-        cp $API_SOURCE_DIR/tokenizer.pkl deploy_package/
-        cp $API_SOURCE_DIR/config.json deploy_package/
-        # NE PAS COPIER tests/, __pycache__, Test_API.ipynb, etc.
+        cp $API_SOURCE_DIR/baseline_pipeline.joblib deploy_package/ # Copier le pipeline joblib
+        # S'assurer qu'aucun fichier lourd restant n'est copié accidentellement
         echo "Contenu du package à zipper :"
         ls -l deploy_package/
-        # Créer l'archive ZIP depuis ce dossier temporaire
-        # Le 'cd' permet de ne pas avoir le dossier 'deploy_package' dans le zip
         cd deploy_package
-        zip -r ../${{ env.DEPLOY_PACKAGE_NAME }} . # Zipper le contenu du dossier courant
-        cd .. # Revenir à la racine
-        echo "Archive $DEPLOY_PACKAGE_NAME créée." # Utiliser $VARIABLE_NAME
+        zip -r ../${{ env.DEPLOY_PACKAGE_NAME }} .
+        cd ..
+        echo "Archive $DEPLOY_PACKAGE_NAME créée."
 
-    # --- MODIFIÉ : Déployer l'archive ZIP ---
     - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v2
       with:
         app-name: 'airparadis-sentiment-api'
         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        # Déployer l'archive ZIP créée à l'étape précédente
-        package: '${{ env.DEPLOY_PACKAGE_NAME }}' # Utiliser le nom de l'archive
+        package: '${{ env.DEPLOY_PACKAGE_NAME }}' # Déployer le zip
