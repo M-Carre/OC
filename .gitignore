@@ -1,6 +1,7 @@
 
 # Fichiers de données volumineux
 *.pkl
+!api/tokenizer.pkl 
 *.parquet
 
 # Fichiers et dossiers Python courants à ignorer
