@@ -29,9 +29,9 @@ print("--- Démarrage de l'application API Sentiment ---")
 # --- Définir les chemins relatifs au script main.py ---
 # On suppose que les fichiers sont dans le même dossier que main.py
 BASE_DIR = Path(__file__).resolve().parent
-TOKENIZER_PATH = BASE_DIR / "Copie de tokenizer_full.pkl"
-CONFIG_PATH = BASE_DIR / "Copie de preprocessing_config.json"
-MODEL_PATH = BASE_DIR / "Copie de final_lstm_full_data.keras" # Le checkpoint Keras
+TOKENIZER_PATH = BASE_DIR / "tokenizer.pkl"
+CONFIG_PATH = BASE_DIR / "config.json"
+MODEL_PATH = BASE_DIR / "model.keras"
 
 # --- Variables globales pour les objets chargés ---
 model = None
