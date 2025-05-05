@@ -1,9 +1,15 @@
+# api/requirements.txt
+
 fastapi
 uvicorn[standard]
 scikit-learn # Pour le pipeline LogReg/TFIDF
 joblib # Pour charger le pipeline
-numpy>=1.20
-pandas # Garder si utilisé ailleurs ou par sklearn
-# --- Dépendances de Test ---
+numpy # Dépendance sklearn/spacy
+pandas # Dépendance sklearn/spacy
+
+# --- Dépendances pour la Lemmatisation ---
+spacy>=3.0 # Version minimale raisonnable
+
+# --- Dépendances de Test (pour le workflow CI) ---
 pytest
 httpx

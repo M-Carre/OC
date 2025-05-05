@@ -1,5 +1,5 @@
-# .github/workflows/deploy.yml (Version Baseline)
-name: Deploy Python FastAPI App (Baseline) to Azure Web App
+# .github/workflows/deploy.yml (Version Simplifiée - Laisser Oryx Gérer)
+name: Deploy Python FastAPI App (Baseline - Oryx Build) to Azure Web App
 
 on:
   push:
@@ -9,9 +9,8 @@ on:
 
 env:
   PYTHON_VERSION: '3.11'
-  VENV_NAME: 'antenv'
-  API_SOURCE_DIR: '${{ github.workspace }}/api'
-  DEPLOY_PACKAGE_NAME: 'api_deploy_package.zip'
+  # API_SOURCE_DIR: '${{ github.workspace }}/api' # Moins utile maintenant
+  DEPLOY_PACKAGE_NAME: 'api_deploy_package.zip' # Garder si on veut zipper
 
 jobs:
   build-and-deploy:
@@ -26,37 +25,27 @@ jobs:
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Create and activate virtual environment
-      run: |
-        python -m venv $VENV_NAME
-        $VENV_NAME/bin/python -m pip install --upgrade pip wheel
+    # --- ÉTAPES VENV SUPPRIMÉES ---
 
-    - name: Install dependencies into virtual environment
+    # --- Optionnel: Exécuter les tests (nécessite d'installer les deps ici) ---
+    - name: Install test dependencies and Run tests
       run: |
-        $VENV_NAME/bin/pip install -r $API_SOURCE_DIR/requirements.txt
+        python -m pip install --upgrade pip
+        pip install -r api/requirements.txt # Installer les dépendances POUR les tests
+        # Si spaCy est nécessaire pour les tests (peu probable), le télécharger ici
+        # python -m spacy download en_core_web_sm
+        pytest api/tests/ # Exécuter les tests
 
-    # --- ÉTAPE spaCy SUPPRIMÉE ---
-
-    - name: List files and venv contents
+    # --- MODIFIÉ : Créer l'archive ZIP avec SEULEMENT le code source ---
+    - name: Create deployment package (Source Only)
       run: |
-        echo "--- Listing Root Directory (${{ github.workspace }}) ---"; ls -lR ${{ github.workspace }}; echo "---";
-        echo "--- Listing API Directory ($API_SOURCE_DIR) ---"; ls -lR $API_SOURCE_DIR; echo "---";
-        echo "--- Listing VENV bin ($VENV_NAME/bin) ---"; ls -l $VENV_NAME/bin || echo "Venv bin not found"; echo "---";
-
-    - name: Run tests
-      run: |
-         $VENV_NAME/bin/pytest $API_SOURCE_DIR/tests/
-
-    # --- MODIFIÉ : Créer l'archive ZIP (Baseline) ---
-    - name: Create deployment package
-      run: |
-        echo "Création de l'archive ZIP (Baseline) pour le déploiement..."
+        echo "Création de l'archive ZIP (Source API) pour le déploiement..."
         mkdir deploy_package
-        # Copier les fichiers nécessaires pour la baseline
-        cp $API_SOURCE_DIR/main.py deploy_package/
-        cp $API_SOURCE_DIR/requirements.txt deploy_package/
-        cp $API_SOURCE_DIR/baseline_pipeline.joblib deploy_package/ # Copier le pipeline joblib
-        # S'assurer qu'aucun fichier lourd restant n'est copié accidentellement
+        # Copier les fichiers de code/config/modèle de l'API
+        cp api/main.py deploy_package/
+        cp api/requirements.txt deploy_package/
+        cp api/baseline_pipeline.joblib deploy_package/
+        # NE PAS COPIER tests/ ou venv/ ou __pycache__/ etc.
         echo "Contenu du package à zipper :"
         ls -l deploy_package/
         cd deploy_package
@@ -64,9 +53,11 @@ jobs:
         cd ..
         echo "Archive $DEPLOY_PACKAGE_NAME créée."
 
+    # --- MODIFIÉ : Déployer l'archive ZIP contenant le code source ---
     - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v2
       with:
         app-name: 'airparadis-sentiment-api'
         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        package: '${{ env.DEPLOY_PACKAGE_NAME }}' # Déployer le zip
+        # Déployer le ZIP du code source. Oryx devrait détecter requirements.txt dedans.
+        package: '${{ env.DEPLOY_PACKAGE_NAME }}'
