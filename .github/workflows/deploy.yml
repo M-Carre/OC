@@ -72,8 +72,7 @@ jobs:
         cd deploy_package
         zip -r ../${{ env.DEPLOY_PACKAGE_NAME }} . # Zipper le contenu du dossier courant
         cd .. # Revenir à la racine
-        echo "Archive ${env.DEPLOY_PACKAGE_NAME} créée."
-
+        echo "Archive $DEPLOY_PACKAGE_NAME créée." # Utiliser $VARIABLE_NAME
 
     # --- MODIFIÉ : Déployer l'archive ZIP ---
     - name: Deploy to Azure Web App
