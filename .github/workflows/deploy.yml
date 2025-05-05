@@ -1,5 +1,5 @@
 # .github/workflows/deploy.yml
-name: Deploy Python FastAPI App to Azure Web App
+name: Deploy Python FastAPI App to Azure Web App (Optimized Package) # Nom mis à jour
 
 on:
   push:
@@ -7,13 +7,12 @@ on:
       - main
   workflow_dispatch:
 
-# Définir des variables d'environnement pour le workflow
 env:
   PYTHON_VERSION: '3.11'
-  VENV_NAME: 'antenv' # Nom du venv
-  # Chemin du venv DANS le runner (utilisé par les étapes run)
-  # Note: Pas besoin de le définir ici car on le construit dans les étapes
-  API_SOURCE_DIR: '${{ github.workspace }}/api' # Chemin vers le code source API
+  VENV_NAME: 'antenv'
+  API_SOURCE_DIR: '${{ github.workspace }}/api'
+  # Nom de l'archive ZIP de déploiement
+  DEPLOY_PACKAGE_NAME: 'api_deploy_package.zip'
 
 jobs:
   build-and-deploy:
@@ -28,54 +27,59 @@ jobs:
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
-    # --- MODIFIÉ : Création et Activation VENV ---
     - name: Create and activate virtual environment
       run: |
-        python -m venv $VENV_NAME # Utiliser $VENV_NAME
-        # Pas besoin d'activer ici, on le fera dans chaque étape run si nécessaire
-        # source $VENV_NAME/bin/activate # Commenté
-        # Installer pip/wheel DANS le venv créé
+        python -m venv $VENV_NAME
         $VENV_NAME/bin/python -m pip install --upgrade pip wheel
 
-    # --- MODIFIÉ : Installation dans le VENV ---
     - name: Install dependencies into virtual environment
       run: |
-        # Utiliser le python/pip du venv directement
         $VENV_NAME/bin/pip install -r $API_SOURCE_DIR/requirements.txt
 
-    # --- MODIFIÉ : Téléchargement spaCy ---
     - name: Download spaCy language model
       run: |
-        # Utiliser le python du venv
         $VENV_NAME/bin/python -m spacy download en_core_web_sm
 
-    # --- MODIFIÉ : Lister les fichiers (ajuster chemins venv) ---
-    - name: List files and venv contents
+    - name: List files and venv contents # Garder pour debug si besoin
       run: |
-        echo "--- Listing Root Directory (${{ github.workspace }}) ---"
-        ls -lR ${{ github.workspace }}
-        echo "---------------------------------------"
-        echo "--- Listing API Directory ($API_SOURCE_DIR) ---"
-        ls -lR $API_SOURCE_DIR
-        echo "---------------------------------------"
-        echo "--- Listing VENV bin ($VENV_NAME/bin) ---"
-        ls -l $VENV_NAME/bin || echo "Venv bin directory not found or empty" # Ajouter fallback
-        echo "---------------------------------------"
+        # ... (commandes ls inchangées) ...
+        echo "--- Listing Root Directory (${{ github.workspace }}) ---"; ls -lR ${{ github.workspace }}; echo "---";
+        echo "--- Listing API Directory ($API_SOURCE_DIR) ---"; ls -lR $API_SOURCE_DIR; echo "---";
+        echo "--- Listing VENV bin ($VENV_NAME/bin) ---"; ls -l $VENV_NAME/bin || echo "Venv bin not found"; echo "---";
 
-    # --- MODIFIÉ : Exécution des tests dans VENV ---
+
     - name: Run tests
       run: |
-         # Activer OU utiliser le pytest du venv
-         # source $VENV_NAME/bin/activate # Option 1: Activer
-         # pytest $API_SOURCE_DIR/tests/
-         # Option 2 (souvent plus robuste en CI): Utiliser chemin direct
          $VENV_NAME/bin/pytest $API_SOURCE_DIR/tests/
 
-    # --- Déploiement (package: '.') ---
+    # --- NOUVELLE ÉTAPE : Créer l'archive ZIP de déploiement ---
+    - name: Create deployment package
+      run: |
+        echo "Création de l'archive ZIP pour le déploiement..."
+        # Créer un dossier temporaire pour l'archive
+        mkdir deploy_package
+        # Copier UNIQUEMENT les fichiers nécessaires de api/ vers ce dossier
+        cp $API_SOURCE_DIR/main.py deploy_package/
+        cp $API_SOURCE_DIR/requirements.txt deploy_package/
+        cp $API_SOURCE_DIR/model.tflite deploy_package/
+        cp $API_SOURCE_DIR/tokenizer.pkl deploy_package/
+        cp $API_SOURCE_DIR/config.json deploy_package/
+        # NE PAS COPIER tests/, __pycache__, Test_API.ipynb, etc.
+        echo "Contenu du package à zipper :"
+        ls -l deploy_package/
+        # Créer l'archive ZIP depuis ce dossier temporaire
+        # Le 'cd' permet de ne pas avoir le dossier 'deploy_package' dans le zip
+        cd deploy_package
+        zip -r ../${{ env.DEPLOY_PACKAGE_NAME }} . # Zipper le contenu du dossier courant
+        cd .. # Revenir à la racine
+        echo "Archive ${env.DEPLOY_PACKAGE_NAME} créée."
+
+
+    # --- MODIFIÉ : Déployer l'archive ZIP ---
     - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v2
       with:
         app-name: 'airparadis-sentiment-api'
         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        # Déployer la racine pour qu'Oryx détecte requirements.txt
-        package: '.'
+        # Déployer l'archive ZIP créée à l'étape précédente
+        package: '${{ env.DEPLOY_PACKAGE_NAME }}' # Utiliser le nom de l'archive
