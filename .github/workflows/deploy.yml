@@ -28,6 +28,13 @@ jobs:
     - name: Download spaCy language model
       run: python -m spacy download en_core_web_sm
 
+      - name: List files in workspace and api directory # NOUVELLE ETAPE DE DEBUG
+  run: |
+    echo "--- Listing Root Directory (${{ github.workspace }}) ---"
+    ls -lR ${{ github.workspace }}
+    echo "--- Listing API Directory (${{ github.workspace }}/api) ---"
+    ls -lR ${{ github.workspace }}/api
+
     - name: Run tests
       # Exécuter pytest depuis la racine pour qu'il trouve api/tests
       run: pytest api/tests/
