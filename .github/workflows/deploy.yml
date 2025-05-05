@@ -1,0 +1,41 @@
+name: Deploy Python FastAPI App to Azure Web App
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python version
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11' # Doit correspondre à la version Azure
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        # Important: Exécuter depuis la racine où se trouve le dossier 'api'
+        pip install -r api/requirements.txt
+
+    - name: Download spaCy language model
+      run: python -m spacy download en_core_web_sm
+
+    - name: Run tests
+      # Exécuter pytest depuis la racine pour qu'il trouve api/tests
+      run: pytest api/tests/
+
+    - name: Deploy to Azure Web App
+      # Cette étape ne s'exécute que si les précédentes réussissent
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: 'airparadis-sentiment-api' # METS ICI LE NOM EXACT DE TON APP AZURE
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }} # Nom du secret GitHub
+        package: './api' # Contenu du dossier 'api' à déployer
