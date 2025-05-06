@@ -1,0 +1,8 @@
+# feedback_interface/requirements.txt
+requests
+azure-monitor-opentelemetry-exporter
+python-dotenv
+ipywidgets
+notebook
+pandas # Si vous l'utilisez pour l'affichage
+# Ajoutez d'autres dépendances si nécessaire pour ce notebook
