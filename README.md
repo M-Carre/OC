@@ -21,7 +21,7 @@ Développer un prototype fonctionnel d'un produit IA capable de prédire le sent
 *   `feedback_interface/` : Contient l'interface locale (notebook) pour tester l'API et fournir du feedback.
     *   `interface_feedback.ipynb`: Le notebook Jupyter permettant de saisir un tweet, d'appeler l'API, et de signaler les prédictions incorrectes à Azure Application Insights.
     *   `requirements.txt`: Les dépendances Python spécifiques à cette interface locale.
-    *   `.env.example`: Un exemple de fichier `.env` (NE PAS COMMITTER LE VRAI `.env` avec la clé).
+    *   `.env.example`: Un exemple de fichier `.env`.
 *   `.github/workflows/` : Contient les workflows GitHub Actions pour l'intégration continue et le déploiement continu (CI/CD).
     *   `deploy.yml`: Workflow qui teste et déploie l'API sur Azure Web App.
 *   `.gitignore`: Fichier spécifiant les fichiers et dossiers à ignorer par Git (données, secrets, environnements virtuels, etc.).
